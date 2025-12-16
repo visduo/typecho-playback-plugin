@@ -111,6 +111,9 @@ $(document).ready(function() {
         canvas.style.width = `${viewportWidth}px`;
         canvas.style.height = `${viewportHeight}px`;
 
+        canvas.style.webkitTouchCallout = 'none';   // 禁用iOS长按菜单
+        canvas.style.webkitUserSelect = 'none';     // 禁用文本选择
+
         // 初始化画布2D上下文对象
         ctx = canvas.getContext('2d');
         if (!ctx) {
@@ -142,6 +145,34 @@ $(document).ready(function() {
      */
     function getCanvasPos(e) {
         return { x: e.clientX, y: e.clientY };
+    }
+
+    /**
+     * 获取触摸/鼠标在画布上的相对坐标
+     * @param {Event} e - 鼠标/触摸事件对象
+     * @returns {Object} {x: 横坐标, y: 纵坐标}
+     */
+    function getEventPos(e) {
+        // 优先处理触摸事件
+        if (e.type.includes('touch')) {
+            const touch = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
+            return { x: touch.clientX, y: touch.clientY };
+        }
+
+        // 鼠标事件
+        return { x: e.clientX, y: e.clientY };
+    }
+
+    /**
+     * 阻止触摸事件默认行为
+     * @param {Event} e - 触摸事件对象
+     */
+    function preventTouchDefault(e) {
+        // 阻止Canvas的触摸默认行为
+        if (e.target === canvas || $(e.target).closest($canvas).length) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
     }
 
     // 画布初始化节流版本，避免高频触发
@@ -520,14 +551,17 @@ $(document).ready(function() {
         // 清空画布按钮点击事件
         $clearBtn.off('click.playback').on('click.playback', clearCanvas);
 
-        // 鼠标按下开始绘图（仅在绘图时绑定mousemove，减少性能开销）
-        $canvas.off('mousedown.playback').on('mousedown.playback', function(e) {
+        // 鼠标按下/触摸开始绘图
+        $canvas.off('mousedown.playback touchstart.playback').on('mousedown.playback touchstart.playback', function(e) {
+            // 阻止触摸默认行为
+            preventTouchDefault(e);
+
             if (!$canvas.hasClass('drawing') || !ctx) {
                 return;
             }
 
             state.isDrawing = true;
-            const pos = getCanvasPos(e);
+            const pos = getEventPos(e);
 
             // 开始绘制路径
             ctx.beginPath();
@@ -544,24 +578,27 @@ $(document).ready(function() {
                 ctx.lineWidth = state.brushSize;
             }
 
-            // 仅在绘图时绑定mousemove，避免全局持续监听
-            $document.off('mousemove.playback').on('mousemove.playback', function(e) {
+            // 鼠标移动/触摸滑动绘图
+            $document.off('mousemove.playback touchmove.playback').on('mousemove.playback touchmove.playback', function(e) {
+                preventTouchDefault(e);
                 if (!state.isDrawing || !ctx) {
                     return;
                 }
 
-                const pos = getCanvasPos(e);
+                const pos = getEventPos(e);
                 ctx.lineTo(pos.x, pos.y);
                 ctx.stroke();       // 绘制线条
             });
         });
 
-        // 鼠标松开/离开停止绘图（解绑mousemove，减少性能开销）
-        $document.off('mouseup.playback mouseleave.playback').on('mouseup.playback mouseleave.playback', function() {
+        // 鼠标松开/触摸结束/离开停止绘图
+        $document.off('mouseup.playback touchend.playback mouseleave.playback touchcancel.playback').on('mouseup.playback touchend.playback mouseleave.playback touchcancel.playback', function(e) {
+            preventTouchDefault(e);
             if (state.isDrawing && ctx) {
                 state.isDrawing = false;
                 ctx.globalCompositeOperation = 'source-over';   // 恢复默认合成模式
-                $document.off('mousemove.playback');            // 解绑mousemove
+                // 解绑移动事件
+                $document.off('mousemove.playback touchmove.playback');
             }
         });
 
@@ -584,7 +621,7 @@ $(document).ready(function() {
         // 重置缩放按钮点击事件
         $zoomResetBtn.off('click.playback').on('click.playback', resetZoom);
 
-        // 窗口大小调整事件（节流执行，避免频繁触发）
+        // 窗口大小调整事件
         $window.off('resize.playback').on('resize.playback', function() {
             if ($main.hasClass('active')) {
                 throttledInitCanvas();
