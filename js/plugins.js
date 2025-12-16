@@ -687,6 +687,10 @@ $(document).ready(function() {
         // 自动进入全屏
         window.playbackFullscreenTimer = setTimeout(enterFullscreen, 50);
 
+        // 滚动到顶部
+        const scrollContainer = $main[0];
+        scrollContainer.scrollTop = 0;
+
         // 重置事件绑定标记，确保可以重新绑定
         state.isEventsBound = false;
         // 绑定所有事件
