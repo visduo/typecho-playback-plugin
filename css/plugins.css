@@ -7,6 +7,9 @@
     position: fixed;
     top: 0;
     left: 0;
+    padding: 10px;
+    box-sizing: border-box;
+    max-width: 100%;
     width: 100vw;
     height: 100vh;
     z-index: 99;
@@ -406,43 +409,44 @@
         flex-wrap: wrap;
         justify-content: center;
         bottom: 10px;
-        max-width: 95vw;
+        max-width: 85vw;
+        border-radius: 20px
     }
 
     :fullscreen .playback .playback-toolbar {
-        bottom: 15px;
+        bottom: 15px
     }
 
     .playback .playback-toolbar button {
         width: 36px;
         height: 36px;
-        font-size: 14px;
+        font-size: 14px
     }
 
     .playback .playback-toolbar .color-picker {
         width: 36px;
-        height: 36px;
+        height: 36px
     }
 
     .playback .brush-size-controls, .zoom-controls {
         padding: 4px 8px;
-        min-width: 100px;
+        min-width: 100px
     }
 
     .playback .brush-size-controls button, .zoom-controls button {
         width: 28px;
-        height: 28px;
+        height: 28px
     }
 
     .playback #playbackTOC {
         width: 240px;
         top: 10px;
         right: -260px;
-        display: block;
+        display: block
     }
 
     .playback #playbackTOC.active {
         right: 10px;
-        opacity: 1;
+        opacity: 1
     }
 }
