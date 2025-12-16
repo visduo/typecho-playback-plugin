@@ -409,7 +409,7 @@
         flex-wrap: wrap;
         justify-content: center;
         bottom: 10px;
-        max-width: 85vw;
+        width: 85vw;
         border-radius: 20px
     }
 
