@@ -32,7 +32,7 @@ $(document).ready(function() {
     // 画笔/橡皮擦控件节点
     const $brushSizeControls = $('.playback #brushSizeControls');       // 画笔尺寸控制容器
     const $sizePrev = $('.playback .brush-size-controls .size-prev');   // 画笔颜色预览块
-    const $disableDrawBtn = $('.playback #disableDrawBtn');             // 禁用绘图按钮
+    const $dragBtn = $('.playback #dragBtn');                           // 拖拽模式按钮
     const $drawBtn = $('.playback #drawBtn');                           // 画笔模式按钮
     const $eraserBtn = $('.playback #eraserBtn');                       // 橡皮擦模式按钮
     const $sizeDownBtn = $('.playback #sizeDownBtn');                   // 画笔尺寸减小按钮
@@ -243,7 +243,7 @@ $(document).ready(function() {
         clearCanvas();
 
         // 更新按钮激活状态
-        $disableDrawBtn.addClass('active');
+        $dragBtn.addClass('active');
         $drawBtn.removeClass('active');
         $eraserBtn.removeClass('active');
     }
@@ -503,8 +503,8 @@ $(document).ready(function() {
             destroyEvents();
         });
 
-        // 禁用绘图按钮点击事件
-        $disableDrawBtn.off('click.playback').on('click.playback', disableDrawMode);
+        // 拖拽模式按钮点击事件
+        $dragBtn.off('click.playback').on('click.playback', disableDrawMode);
 
         // 画笔模式按钮点击事件
         $drawBtn.off('click.playback').on('click.playback', function() {
@@ -513,7 +513,7 @@ $(document).ready(function() {
 
             $drawBtn.addClass('active');
             $eraserBtn.removeClass('active');
-            $disableDrawBtn.removeClass('active');
+            $dragBtn.removeClass('active');
         });
 
         // 橡皮擦模式按钮点击事件
@@ -523,7 +523,7 @@ $(document).ready(function() {
 
             $eraserBtn.addClass('active');
             $drawBtn.removeClass('active');
-            $disableDrawBtn.removeClass('active');
+            $dragBtn.removeClass('active');
         });
 
         // 画笔尺寸减小按钮点击事件
@@ -655,7 +655,7 @@ $(document).ready(function() {
         $document.off('.playback');
         $fullscreenBtn.off('.playback');
         $exitBtn.off('.playback');
-        $disableDrawBtn.off('.playback');
+        $dragBtn.off('.playback');
         $drawBtn.off('.playback');
         $eraserBtn.off('.playback');
         $sizeDownBtn.off('.playback');

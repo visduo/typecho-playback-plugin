@@ -109,8 +109,8 @@ class playback_Plugin implements Typecho_Plugin_Interface
                 <button id="eraserBtn" data-tooltip="橡皮擦">
                     <i class="fas fa-eraser"></i>
                 </button>
-                <button id="disableDrawBtn" class="disable-draw-btn" data-tooltip="关闭画笔">
-                    <i class="fas fa-times"></i>
+                <button id="dragBtn" class="drag-btn" data-tooltip="拖拽模式">
+                    <i class="fas fa-allergies"></i>
                 </button>
                 <input type="color" id="colorPicker" class="color-picker" value="#ff0000" data-tooltip="选择画笔颜色">
                 <div id="brushSizeControls" class="brush-size-controls" data-size="8">
