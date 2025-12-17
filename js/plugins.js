@@ -9,7 +9,8 @@ $(document).ready(function() {
         ZOOM: { min: 0.5, max: 2.0, step: 0.1 },    // 缩放最小比例/最大比例/调整步长
         DEFAULT_BRUSH_COLOR: '#ff0000',             // 默认画笔颜色
         DEFAULT_BRUSH_SIZE_INDEX: 1,                // 默认画笔尺寸索引
-        TITLE_SELECTORS: 'h1, h2, h3, h4, h5'       // TOC匹配的标题标签
+        TITLE_SELECTORS: 'h1, h2, h3, h4, h5',      // TOC匹配的标题标签
+        LASER: { size: 12, opacity: 0.9 }           // 激光笔大小/透明度
     };
 
     // ====================== DOM节点 ======================
@@ -40,6 +41,9 @@ $(document).ready(function() {
     const $sizeValue = $('.playback #sizeValue');                       // 画笔尺寸显示值
     const $colorPicker = $('.playback #colorPicker');                   // 画笔颜色选择器
     const $clearBtn = $('.playback #clearBtn');                         // 清空画布按钮
+    const $laserBtn = $('.playback #laserBtn');                         // 激光笔按钮
+    let $laserPointer = null;                                    // 激光DOM元素
+    const LASER_CLASS = 'playback-laser-pointer';              // 激光DOM类名
 
     // 缩放控件节点
     const $zoomOutBtn = $('.playback #zoomOutBtn');         // 缩小按钮
@@ -69,6 +73,7 @@ $(document).ready(function() {
         currentSizeIndex: CONFIG.DEFAULT_BRUSH_SIZE_INDEX,                      // 当前画笔尺寸索引
         zoomScale: 1.0,                                                         // 当前缩放比例
         isTOCActive: false,                                                     // TOC是否显示
+        isLaserActive: false,                                                   // 是否启用激光笔模式
         isEventsBound: false                                                    // 标记事件是否已绑定，防止重复绑定
     };
 
@@ -232,7 +237,7 @@ $(document).ready(function() {
         return !!document.fullscreenElement || !!document.webkitFullscreenElement || !!document.msFullscreenElement;
     }
 
-    // ====================== 画笔/橡皮擦 ======================
+    // ====================== 画笔/橡皮擦/激光笔 ======================
     /**
      * 禁用绘图模式
      */
@@ -260,6 +265,70 @@ $(document).ready(function() {
         // 边界控制，禁用/启用尺寸调整按钮
         $sizeDownBtn.prop('disabled', state.currentSizeIndex <= 0);                                     // 最小尺寸时禁用减小
         $sizeUpBtn.prop('disabled', state.currentSizeIndex >= CONFIG.BRUSH_SIZE_STEPS.length - 1);      // 最大尺寸时禁用增大
+    }
+
+    // 新增：激活激光笔（隐藏鼠标+显示光点+绑定移动）
+    function activateLaser() {
+        disableDrawMode();      // 禁用绘图
+        state.isLaserActive = true;
+        $laserBtn.addClass('active');
+        $body.addClass('laser-active');     // 隐藏原生鼠标
+
+        // 创建激光笔光点
+        if (!$laserPointer) {
+            $laserPointer = $(`<div class="${LASER_CLASS}"></div>`);
+            // 初始颜色同步画笔颜色
+            $laserPointer.css({
+                width: `${CONFIG.LASER.size}px`,
+                height: `${CONFIG.LASER.size}px`,
+                background: state.brushColor,   // 同步画笔颜色
+                boxShadow: `0 0 12px ${state.brushColor}, 0 0 24px ${state.brushColor}`,
+                opacity: CONFIG.LASER.opacity,
+                zIndex: 99999
+            });
+            $body.append($laserPointer);
+        }
+
+        // 绑定鼠标移动
+        $document.on('mousemove.laser', function(e) {
+            const x = e.clientX / state.zoomScale; // 适配缩放
+            const y = e.clientY / state.zoomScale;
+            $laserPointer.css({
+                left: `${x}px`,
+                top: `${y}px`,
+                display: 'block'
+            });
+        });
+    }
+
+    /**
+     * 禁用激光笔
+     */
+    function deactivateLaser() {
+        state.isLaserActive = false;
+        $laserBtn.removeClass('active');
+        $body.removeClass('laser-active');      // 恢复原生鼠标
+        if ($laserPointer) $laserPointer.hide();
+        $document.off('mousemove.laser');
+    }
+
+    /**
+     * 切换激光笔状态
+     */
+    function toggleLaser() {
+        state.isLaserActive ? deactivateLaser() : activateLaser();
+    }
+
+    /**
+     * 同步激光笔颜色
+     */
+    function syncLaserColor() {
+        if ($laserPointer) {
+            $laserPointer.css({
+                background: state.brushColor,
+                boxShadow: `0 0 12px ${state.brushColor}, 0 0 24px ${state.brushColor}`
+            });
+        }
     }
 
     // ====================== 缩放 ======================
@@ -483,6 +552,7 @@ $(document).ready(function() {
             $toolbar.hide();
             $body.css('overflow', 'auto');
             disableDrawMode();      // 禁用绘图模式
+            deactivateLaser();      // 关闭激光笔
 
             // 重置内容容器样式，避免缩放残留
             $playbackContent.css('transform', 'none');
@@ -526,6 +596,9 @@ $(document).ready(function() {
             $dragBtn.removeClass('active');
         });
 
+        // 激光笔按钮点击事件
+        $laserBtn.off('click.playback').on('click.playback', toggleLaser);
+
         // 画笔尺寸减小按钮点击事件
         $sizeDownBtn.off('click.playback').on('click.playback', function() {
             if (state.currentSizeIndex > 0) {
@@ -546,6 +619,7 @@ $(document).ready(function() {
         $colorPicker.off('change.playback').on('change.playback', function() {
             state.brushColor = $(this).val();
             $sizePrev.css('color', state.brushColor);   // 同步预览块颜色
+            syncLaserColor();       // 同步激光笔颜色
         });
 
         // 清空画布按钮点击事件
@@ -635,6 +709,8 @@ $(document).ready(function() {
                     hideTOC();          // 关闭TOC
                 } else if (isFullscreenMode()) {
                     exitFullscreen();   // 退出全屏
+                } else if (state.isLaserActive) {
+                    deactivateLaser();  // 关闭激光笔
                 } else if ($main.hasClass('active')) {
                     $exitBtn.click();   // 退出放映模式
                 }
@@ -666,6 +742,7 @@ $(document).ready(function() {
         $window.off('.playback');
         $playbackTOC.off('.playback');
         $tocList.off('.playback');
+        $laserBtn.off('.playback');
 
         // 清理画布上下文
         if (ctx) {
@@ -683,6 +760,7 @@ $(document).ready(function() {
         state.isTOCActive = false;
         state.currentSizeIndex = CONFIG.DEFAULT_BRUSH_SIZE_INDEX;
         state.brushColor = CONFIG.DEFAULT_BRUSH_COLOR;
+        state.isLaserActive = false;
         state.isEventsBound = false;
     }
 

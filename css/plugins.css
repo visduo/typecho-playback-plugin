@@ -393,6 +393,24 @@
     border-radius: 4px
 }
 
+body.laser-active {
+    cursor: none !important;
+}
+
+.playback-laser-pointer {
+    position: fixed;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    opacity: 0.9;
+    pointer-events: none;
+    z-index: 999999;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 12px #ff0000, 0 0 24px #ff0000;
+    will-change: top, left;
+    display: none;
+}
+
 @media (max-width: 768px) {
     .playback .playback-toolbar {
         gap: 10px;

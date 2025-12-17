@@ -109,7 +109,10 @@ class playback_Plugin implements Typecho_Plugin_Interface
                 <button id="eraserBtn" data-tooltip="橡皮擦">
                     <i class="fas fa-eraser"></i>
                 </button>
-                <button id="dragBtn" class="drag-btn" data-tooltip="拖拽模式">
+                <button class="playback-toolbar-btn" id="laserBtn" data-tooltip="激光笔">
+                    <i class="fas fa-highlighter"></i>
+                </button>
+                <button id="dragBtn" class="drag-btn" data-tooltip="滚动/拖拽模式">
                     <i class="fas fa-allergies"></i>
                 </button>
                 <input type="color" id="colorPicker" class="color-picker" value="#ff0000" data-tooltip="选择画笔颜色">
