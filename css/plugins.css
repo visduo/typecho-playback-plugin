@@ -29,8 +29,7 @@
 
 .playback .playback-content {
     max-width: 1200px;
-    margin: 0 auto;
-    margin-bottom: 180px;
+    margin: 0 auto 180px;
     font-size: 18px;
     line-height: 1.8;
     transition: transform 0.2s ease;
@@ -391,7 +390,11 @@
 }
 
 body.laser-active {
-    cursor: none !important;
+    cursor: none !important
+}
+
+body.laser-active * {
+    cursor: none !important
 }
 
 .playback-laser-pointer {
@@ -406,6 +409,7 @@ body.laser-active {
     box-shadow: 0 0 12px #ff0000, 0 0 24px #ff0000;
     will-change: top, left;
     display: none;
+    transform-origin: center center
 }
 
 @media (max-width: 768px) {

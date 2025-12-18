@@ -103,6 +103,9 @@ class playback_Plugin implements Typecho_Plugin_Interface
             <canvas id="playbackDrawingCanvas"></canvas>
 
             <div class="playback-toolbar" id="playbackToolbar" style="display: none;">
+                <button id="dragBtn" class="drag-btn active" data-tooltip="拖拽">
+                    <i class="fas fa-arrows-alt"></i>
+                </button>
                 <button id="drawBtn" data-tooltip="画笔">
                     <i class="fas fa-pen"></i>
                 </button>
@@ -112,40 +115,37 @@ class playback_Plugin implements Typecho_Plugin_Interface
                 <button class="playback-toolbar-btn" id="laserBtn" data-tooltip="激光笔">
                     <i class="fas fa-highlighter"></i>
                 </button>
-                <button id="dragBtn" class="drag-btn" data-tooltip="滚动/拖拽模式">
-                    <i class="fas fa-allergies"></i>
-                </button>
                 <input type="color" id="colorPicker" class="color-picker" value="#ff0000" data-tooltip="选择画笔颜色">
                 <div id="brushSizeControls" class="brush-size-controls" data-size="8">
-                    <button id="sizeDownBtn" data-tooltip="减小粗细">
+                    <button id="sizeDownBtn" data-tooltip="减小笔粗细">
                         <i class="fas fa-minus"></i>
                     </button>
                     <div class="size-prev" style="color: #ff0000;"></div>
                     <span class="size-value" id="sizeValue">8</span>
-                    <button id="sizeUpBtn" data-tooltip="增大粗细">
+                    <button id="sizeUpBtn" data-tooltip="增大笔粗细">
                         <i class="fas fa-plus"></i>
                     </button>
                 </div>
                 <div class="zoom-controls">
-                    <button id="zoomOutBtn" data-tooltip="缩小">
+                    <button id="zoomOutBtn" data-tooltip="缩小画布">
                         <i class="fas fa-minus"></i>
                     </button>
                     <span class="zoom-value" id="zoomValue">100%</span>
-                    <button id="zoomInBtn" data-tooltip="放大">
+                    <button id="zoomInBtn" data-tooltip="放大画布">
                         <i class="fas fa-plus"></i>
                     </button>
-                    <button id="zoomResetBtn" data-tooltip="重置缩放">
+                    <button id="zoomResetBtn" data-tooltip="重置画布">
                         <i class="fas fa-compress-arrows-alt"></i>
                     </button>
                 </div>
+                <button id="clearBtn" data-tooltip="清空画布">
+                    <i class="fas fa-trash"></i>
+                </button>
                 <button id="tocBtn" class="playback-toc-btn" data-tooltip="目录">
                     <i class="fas fa-list"></i>
                 </button>
                 <button id="fullscreenBtn" class="fullscreen-btn" data-tooltip="全屏/退出全屏">
                     <i class="fas fa-expand"></i>
-                </button>
-                <button id="clearBtn" data-tooltip="清空画布">
-                    <i class="fas fa-trash"></i>
                 </button>
                 <button id="exitBtn" class="close-btn" data-tooltip="退出放映模式">
                     <i class="fas fa-sign-out-alt"></i>

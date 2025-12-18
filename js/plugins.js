@@ -1,89 +1,81 @@
-/**
- * 放映模式
- * 支持：画布绘图、全屏控制、缩放、TOC目录、适配图像懒加载等
- */
 $(document).ready(function() {
-    // ====================== 全局配置 ======================
     const CONFIG = {
-        BRUSH_SIZE_STEPS: [1, 5, 8, 12, 20, 30],    // 画笔尺寸可选值
-        ZOOM: { min: 0.5, max: 2.0, step: 0.1 },    // 缩放最小比例/最大比例/调整步长
-        DEFAULT_BRUSH_COLOR: '#ff0000',             // 默认画笔颜色
-        DEFAULT_BRUSH_SIZE_INDEX: 1,                // 默认画笔尺寸索引
-        TITLE_SELECTORS: 'h1, h2, h3, h4, h5',      // TOC匹配的标题标签
-        LASER: { size: 12, opacity: 0.9 }           // 激光笔大小/透明度
+        BRUSH_SIZE_STEPS: [1, 5, 8, 12, 20, 30],
+        ZOOM: {
+            min: 0.5,
+            max: 2.0,
+            step: 0.1
+        },
+        DEFAULT_BRUSH_COLOR: '#ff0000',
+        DEFAULT_BRUSH_SIZE_INDEX: 1,
+        TITLE_SELECTORS: 'h1, h2, h3, h4, h5',
+        LASER: {
+            size: 12,
+            opacity: 0.9
+        }
     };
 
-    // ====================== DOM节点 ======================
-    // 基础节点
-    const $document = $(document);  // 文档根节点
-    const $window = $(window);      // 窗口对象
-    const $body = $('body');        // body节点
+    const $document = $(document);
+    const $window = $(window);
+    const $body = $('body');
 
-    // 放映模式核心容器节点
-    const $main = $('.playback #playbackMain');                 // 放映模式主容器
-    const $playbackContent = $('.playback #playbackContent');   // 放映模式内容容器
-    const $toolbar = $('.playback #playbackToolbar');           // 放映模式工具栏
-    let $originalContent = $('.post-content');                  // 原始文章内容容器
+    const $mainContainer = $('.playback #playbackMain');
+    const $contentContainer = $('.playback #playbackContent');
+    const $toolbarContainer = $('.playback #playbackToolbar');
+    let $originalContent = $('.post-content');
 
-    // 画布节点
-    const $canvas = $('.playback #playbackDrawingCanvas');  // 绘图画布
-    const canvas = $canvas[0];                              // 画布原生DOM对象
-    let ctx = null;                                  // 画布2D上下文对象
+    const $canvas = $('.playback #playbackDrawingCanvas');
+    const canvasElement = $canvas[0];
+    let canvasContext = null;
 
-    // 画笔/橡皮擦控件节点
-    const $brushSizeControls = $('.playback #brushSizeControls');       // 画笔尺寸控制容器
-    const $sizePrev = $('.playback .brush-size-controls .size-prev');   // 画笔颜色预览块
-    const $dragBtn = $('.playback #dragBtn');                           // 拖拽模式按钮
-    const $drawBtn = $('.playback #drawBtn');                           // 画笔模式按钮
-    const $eraserBtn = $('.playback #eraserBtn');                       // 橡皮擦模式按钮
-    const $sizeDownBtn = $('.playback #sizeDownBtn');                   // 画笔尺寸减小按钮
-    const $sizeUpBtn = $('.playback #sizeUpBtn');                       // 画笔尺寸增大按钮
-    const $sizeValue = $('.playback #sizeValue');                       // 画笔尺寸显示值
-    const $colorPicker = $('.playback #colorPicker');                   // 画笔颜色选择器
-    const $clearBtn = $('.playback #clearBtn');                         // 清空画布按钮
-    const $laserBtn = $('.playback #laserBtn');                         // 激光笔按钮
-    let $laserPointer = null;                                    // 激光DOM元素
-    const LASER_CLASS = 'playback-laser-pointer';              // 激光DOM类名
+    const $brushSizeControls = $('.playback #brushSizeControls');
+    const $sizePreview = $('.playback .brush-size-controls .size-prev');
+    const $dragModeBtn = $('.playback #dragBtn');
+    const $drawModeBtn = $('.playback #drawBtn');
+    const $eraserModeBtn = $('.playback #eraserBtn');
+    const $sizeDownBtn = $('.playback #sizeDownBtn');
+    const $sizeUpBtn = $('.playback #sizeUpBtn');
+    const $sizeDisplay = $('.playback #sizeValue');
+    const $colorPicker = $('.playback #colorPicker');
+    const $clearCanvasBtn = $('.playback #clearBtn');
+    const $laserModeBtn = $('.playback #laserBtn');
+    let $laserPointer = null;
+    const LASER_CLASS = 'playback-laser-pointer';
 
-    // 缩放控件节点
-    const $zoomOutBtn = $('.playback #zoomOutBtn');         // 缩小按钮
-    const $zoomInBtn = $('.playback #zoomInBtn');           // 放大按钮
-    const $zoomResetBtn = $('.playback #zoomResetBtn');     // 重置缩放按钮
-    const $zoomValue = $('.playback #zoomValue');           // 缩放比例显示值
+    const $zoomOutBtn = $('.playback #zoomOutBtn');
+    const $zoomInBtn = $('.playback #zoomInBtn');
+    const $zoomResetBtn = $('.playback #zoomResetBtn');
+    const $zoomDisplay = $('.playback #zoomValue');
 
-    // 全屏控件节点
-    const $fullscreenBtn = $('.playback #fullscreenBtn');   // 全屏/退出全屏按钮
+    const $fullscreenBtn = $('.playback #fullscreenBtn');
 
-    // 放映模式控制按钮节点
-    const $enterPlayback = $('#enterPlayback');     // 进入放映模式按钮
-    const $exitBtn = $('.playback #exitBtn');       // 退出放映模式按钮
+    const $enterPlaybackBtn = $('#enterPlayback');
+    const $exitPlaybackBtn = $('.playback #exitBtn');
 
-    // TOC目录节点
-    const $tocBtn = $('.playback #tocBtn');                            // TOC显示/隐藏切换按钮
-    const $playbackTOC = $('.playback #playbackTOC');                  // TOC主容器
-    const $tocList = $playbackTOC.find('.playback-toc-list');   // TOC列表容器
-    const $tocCloseBtn = $('.playback #tocCloseBtn');                  // TOC关闭按钮
+    const $tocToggleBtn = $('.playback #tocBtn');
+    const $tocContainer = $('.playback #playbackTOC');
+    const $tocListContainer = $tocContainer.find('.playback-toc-list');
+    const $tocCloseBtn = $('.playback #tocCloseBtn');
 
-    // ====================== 全局状态变量 ======================
-    const state = {
-        isDrawing: false,                                                       // 是否处于绘图状态
-        isEraserActive: false,                                                  // 是否启用橡皮擦模式
-        brushColor: CONFIG.DEFAULT_BRUSH_COLOR,                                 // 当前画笔颜色
-        brushSize: CONFIG.BRUSH_SIZE_STEPS[CONFIG.DEFAULT_BRUSH_SIZE_INDEX],    // 当前画笔尺寸
-        currentSizeIndex: CONFIG.DEFAULT_BRUSH_SIZE_INDEX,                      // 当前画笔尺寸索引
-        zoomScale: 1.0,                                                         // 当前缩放比例
-        isTOCActive: false,                                                     // TOC是否显示
-        isLaserActive: false,                                                   // 是否启用激光笔模式
-        isEventsBound: false                                                    // 标记事件是否已绑定，防止重复绑定
+    const appState = {
+        isDrawing: false,
+        isEraserActive: false,
+        brushColor: CONFIG.DEFAULT_BRUSH_COLOR,
+        brushSize: CONFIG.BRUSH_SIZE_STEPS[CONFIG.DEFAULT_BRUSH_SIZE_INDEX],
+        currentSizeIndex: CONFIG.DEFAULT_BRUSH_SIZE_INDEX,
+        zoomScale: 1.0,
+        isTOCActive: false,
+        isLaserActive: false,
+        isEventsBound: false,
+        isDragging: false,
+        dragStartX: 0,
+        dragStartY: 0,
+        dragStartOffsetX: 0,
+        dragStartOffsetY: 0,
+        contentOffsetX: 0,
+        contentOffsetY: 0
     };
 
-    // ====================== 工具函数 ======================
-    /**
-     * 限制高频触发的函数执行频率
-     * @param {Function} fn - 要节流的函数
-     * @param {Number} delay - 节流延迟时间
-     * @returns {Function} 节流后的函数
-     */
     function throttle(fn, delay = 100) {
         let timer = null;
         return function(...args) {
@@ -96,100 +88,61 @@ $(document).ready(function() {
         };
     }
 
-    // ====================== 画布 ======================
-    /**
-     * 初始化画布
-     */
     function initCanvas() {
-        if (!canvas) {
+        if (!canvasElement) {
             return;
         }
 
         const viewportWidth = $window.width();
         const viewportHeight = $window.height();
-        const dpr = window.devicePixelRatio || 1;   // 设备像素比，适配高清屏
+        const devicePixelRatio = window.devicePixelRatio || 1;
 
-        // 设置画布实际尺寸，解决模糊问题
-        canvas.width = viewportWidth * dpr;
-        canvas.height = viewportHeight * dpr;
-        // 设置画布显示尺寸，匹配视口大小
-        canvas.style.width = `${viewportWidth}px`;
-        canvas.style.height = `${viewportHeight}px`;
+        canvasElement.width = viewportWidth * devicePixelRatio;
+        canvasElement.height = viewportHeight * devicePixelRatio;
+        canvasElement.style.width = `${viewportWidth}px`;
+        canvasElement.style.height = `${viewportHeight}px`;
 
-        canvas.style.webkitTouchCallout = 'none';   // 禁用iOS长按菜单
-        canvas.style.webkitUserSelect = 'none';     // 禁用文本选择
+        canvasElement.style.webkitTouchCallout = 'none';
+        canvasElement.style.webkitUserSelect = 'none';
 
-        // 初始化画布2D上下文对象
-        ctx = canvas.getContext('2d');
-        if (!ctx) {
+        canvasContext = canvasElement.getContext('2d');
+        if (!canvasContext) {
             return;
         }
 
-        // 设置画布默认样式
-        ctx.scale(dpr, dpr);    // 适配设备像素比
-        ctx.lineCap = 'round';  // 线条端点为圆角
-        ctx.lineJoin = 'round'; // 线条连接点为圆角
-        clearCanvas();          // 初始化时清空画布
+        canvasContext.scale(devicePixelRatio, devicePixelRatio);
+        canvasContext.lineCap = 'round';
+        canvasContext.lineJoin = 'round';
+        clearCanvas();
     }
 
-    /**
-     * 清空画布内容
-     */
     function clearCanvas() {
-        if (!ctx) {
+        if (!canvasContext) {
             return;
         }
-
-        ctx.clearRect(0, 0, $window.width(), $window.height());
+        canvasContext.clearRect(0, 0, $window.width(), $window.height());
     }
 
-    /**
-     * 获取鼠标在画布上的相对坐标
-     * @param {MouseEvent} e - 鼠标事件对象
-     * @returns {Object} {x: 横坐标, y: 纵坐标}
-     */
-    function getCanvasPos(e) {
-        return { x: e.clientX, y: e.clientY };
-    }
-
-    /**
-     * 获取触摸/鼠标在画布上的相对坐标
-     * @param {Event} e - 鼠标/触摸事件对象
-     * @returns {Object} {x: 横坐标, y: 纵坐标}
-     */
-    function getEventPos(e) {
-        // 优先处理触摸事件
+    function getEventPosition(e) {
         if (e.type.includes('touch')) {
             const touch = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
             return { x: touch.clientX, y: touch.clientY };
         }
-
-        // 鼠标事件
         return { x: e.clientX, y: e.clientY };
     }
 
-    /**
-     * 阻止触摸事件默认行为
-     * @param {Event} e - 触摸事件对象
-     */
     function preventTouchDefault(e) {
-        // 阻止Canvas的触摸默认行为
-        if (e.target === canvas || $(e.target).closest($canvas).length) {
+        if (e.target === canvasElement || $(e.target).closest($canvas).length) {
             e.preventDefault();
             e.stopPropagation();
         }
     }
 
-    // 画布初始化节流版本，避免高频触发
     const throttledInitCanvas = throttle(initCanvas, 200);
 
-    // ====================== 全屏控制 ======================
-    /**
-     * 进入全屏模式
-     */
     function enterFullscreen() {
         const elem = document.documentElement;
-        // 兼容多浏览器
+
         if (elem.requestFullscreen) {
             elem.requestFullscreen();
         } else if (elem.webkitRequestFullscreen) {
@@ -199,14 +152,10 @@ $(document).ready(function() {
         }
 
         updateFullscreenBtn(true);
-        throttledInitCanvas(); // 节流执行画布初始化
+        throttledInitCanvas();
     }
 
-    /**
-     * 退出全屏模式
-     */
     function exitFullscreen() {
-        // 兼容多浏览器
         if (document.exitFullscreen) {
             document.exitFullscreen();
         } else if (document.webkitExitFullscreen) {
@@ -216,154 +165,155 @@ $(document).ready(function() {
         }
 
         updateFullscreenBtn(false);
-        throttledInitCanvas(); // 节流执行画布初始化
+        throttledInitCanvas();
     }
 
-    /**
-     * 更新全屏按钮的显示状态
-     * @param {Boolean} isFullscreen - 是否处于全屏状态
-     */
     function updateFullscreenBtn(isFullscreen) {
-        const icon = isFullscreen ? 'fa-compress' : 'fa-expand';
-        const tooltip = isFullscreen ? '退出全屏' : '进入全屏';
-        $fullscreenBtn.html(`<i class="fas ${icon}"></i>`).attr('data-tooltip', tooltip);
+        const iconClass = isFullscreen ? 'fa-compress' : 'fa-expand';
+        const tooltipText = isFullscreen ? '退出全屏' : '进入全屏';
+        $fullscreenBtn.html(`<i class="fas ${iconClass}"></i>`).attr('data-tooltip', tooltipText);
     }
 
-    /**
-     * 判断当前是否处于全屏模式
-     * @returns {Boolean} true=全屏，false=非全屏
-     */
     function isFullscreenMode() {
         return !!document.fullscreenElement || !!document.webkitFullscreenElement || !!document.msFullscreenElement;
     }
 
-    // ====================== 画笔/橡皮擦/激光笔 ======================
-    /**
-     * 禁用绘图模式
-     */
     function disableDrawMode() {
-        state.isDrawing = false;
-        state.isEraserActive = false;
-        $canvas.removeClass('drawing');     // 移除绘图模式标识类
+        appState.isDrawing = false;
+        appState.isEraserActive = false;
+        $canvas.removeClass('drawing');
         clearCanvas();
 
-        // 更新按钮激活状态
-        $dragBtn.addClass('active');
-        $drawBtn.removeClass('active');
-        $eraserBtn.removeClass('active');
+        $dragModeBtn.addClass('active');
+        $drawModeBtn.removeClass('active');
+        $eraserModeBtn.removeClass('active');
+
+        updateDragState();
     }
 
-    /**
-     * 更新画笔尺寸
-     */
-    function updateBrushSize() {
-        state.brushSize = CONFIG.BRUSH_SIZE_STEPS[state.currentSizeIndex];
-        $sizeValue.text(state.brushSize);                               // 显示当前尺寸值
-        $brushSizeControls.attr('data-size', state.brushSize);    // 尺寸标识属性
-        $sizePrev.css('color', state.brushColor);                 // 同步预览块颜色
-
-        // 边界控制，禁用/启用尺寸调整按钮
-        $sizeDownBtn.prop('disabled', state.currentSizeIndex <= 0);                                     // 最小尺寸时禁用减小
-        $sizeUpBtn.prop('disabled', state.currentSizeIndex >= CONFIG.BRUSH_SIZE_STEPS.length - 1);      // 最大尺寸时禁用增大
-    }
-
-    // 新增：激活激光笔（隐藏鼠标+显示光点+绑定移动）
     function activateLaser() {
-        disableDrawMode();      // 禁用绘图
-        state.isLaserActive = true;
-        $laserBtn.addClass('active');
-        $body.addClass('laser-active');     // 隐藏原生鼠标
+        disableDrawMode();
+        appState.isLaserActive = true;
+        $laserModeBtn.addClass('active');
+        $body.addClass('laser-active');
 
-        // 创建激光笔光点
+        $body.css('cursor', 'none');
+
         if (!$laserPointer) {
             $laserPointer = $(`<div class="${LASER_CLASS}"></div>`);
-            // 初始颜色同步画笔颜色
             $laserPointer.css({
                 width: `${CONFIG.LASER.size}px`,
                 height: `${CONFIG.LASER.size}px`,
-                background: state.brushColor,   // 同步画笔颜色
-                boxShadow: `0 0 12px ${state.brushColor}, 0 0 24px ${state.brushColor}`,
+                background: appState.brushColor,
+                boxShadow: `0 0 12px ${appState.brushColor}, 0 0 24px ${appState.brushColor}`,
                 opacity: CONFIG.LASER.opacity,
-                zIndex: 99999
+                zIndex: 99999,
+                position: 'fixed',
+                pointerEvents: 'none'
             });
             $body.append($laserPointer);
         }
 
-        // 绑定鼠标移动
-        $document.on('mousemove.laser', function(e) {
-            const x = e.clientX / state.zoomScale; // 适配缩放
-            const y = e.clientY / state.zoomScale;
+        $document.one('mousemove.laseronce', function(e) {
             $laserPointer.css({
-                left: `${x}px`,
-                top: `${y}px`,
+                left: `${e.clientX}px`,
+                top: `${e.clientY}px`,
+                display: 'block'
+            });
+            $document.off('mousemove.laseronce');
+        });
+
+        $document.on('mousemove.laser', function(e) {
+            $laserPointer.css({
+                left: `${e.clientX}px`,
+                top: `${e.clientY}px`,
                 display: 'block'
             });
         });
     }
 
-    /**
-     * 禁用激光笔
-     */
     function deactivateLaser() {
-        state.isLaserActive = false;
-        $laserBtn.removeClass('active');
-        $body.removeClass('laser-active');      // 恢复原生鼠标
+        appState.isLaserActive = false;
+        $laserModeBtn.removeClass('active');
+        $body.removeClass('laser-active');
+        $body.css('cursor', '');
         if ($laserPointer) $laserPointer.hide();
         $document.off('mousemove.laser');
     }
 
-    /**
-     * 切换激光笔状态
-     */
     function toggleLaser() {
-        state.isLaserActive ? deactivateLaser() : activateLaser();
+        if (appState.isLaserActive) {
+            deactivateLaser();
+            updateDragState();
+        } else {
+            activateLaser();
+            $dragModeBtn.removeClass('active');
+            appState.isDragging = false;
+            $mainContainer.css('cursor', 'default');
+        }
     }
 
-    /**
-     * 同步激光笔颜色
-     */
     function syncLaserColor() {
         if ($laserPointer) {
             $laserPointer.css({
-                background: state.brushColor,
-                boxShadow: `0 0 12px ${state.brushColor}, 0 0 24px ${state.brushColor}`
+                background: appState.brushColor,
+                boxShadow: `0 0 12px ${appState.brushColor}, 0 0 24px ${appState.brushColor}`
             });
         }
     }
 
-    // ====================== 缩放 ======================
-    /**
-     * 更新缩放比例
-     */
+    function updateBrushSize() {
+        appState.brushSize = CONFIG.BRUSH_SIZE_STEPS[appState.currentSizeIndex];
+        $sizeDisplay.text(appState.brushSize);
+        $brushSizeControls.attr('data-size', appState.brushSize);
+        $sizePreview.css('color', appState.brushColor);
+
+        $sizeDownBtn.prop('disabled', appState.currentSizeIndex <= 0);
+        $sizeUpBtn.prop('disabled', appState.currentSizeIndex >= CONFIG.BRUSH_SIZE_STEPS.length - 1);
+    }
+
     function updateZoom() {
-        const zoomPercent = Math.round(state.zoomScale * 100); // 转换为百分比
+        const zoomPercent = Math.round(appState.zoomScale * 100);
+        $zoomDisplay.text(`${zoomPercent}%`);
 
-        $zoomValue.text(`${zoomPercent}%`);     // 显示当前缩放值
+        applyTransform();
 
-        // 应用缩放到内容容器
-        $playbackContent.css({
-            'transform': `scale(${state.zoomScale})`,
-            'transform-origin': 'center top'    // 缩放原点，顶部居中
+        $zoomOutBtn.prop('disabled', appState.zoomScale <= CONFIG.ZOOM.min);
+        $zoomInBtn.prop('disabled', appState.zoomScale >= CONFIG.ZOOM.max);
+
+        updateDragState();
+    }
+
+    function applyTransform() {
+        const transformString = `scale(${appState.zoomScale}) translate(${appState.contentOffsetX}px, ${appState.contentOffsetY}px)`;
+        $contentContainer.css({
+            'transform': transformString,
+            'transform-origin': 'center top'
         });
-
-        // 边界控制，禁用/启用缩放按钮
-        $zoomOutBtn.prop('disabled', state.zoomScale <= CONFIG.ZOOM.min);   // 最小缩放时禁用缩小
-        $zoomInBtn.prop('disabled', state.zoomScale >= CONFIG.ZOOM.max);    // 最大缩放时禁用放大
     }
 
-    /**
-     * 重置缩放比例
-     */
     function resetZoom() {
-        state.zoomScale = 1.0;
+        appState.zoomScale = 1.0;
+        appState.contentOffsetX = 0;
+        appState.contentOffsetY = 0;
         updateZoom();
+        updateDragState();
+        $mainContainer[0].scrollTop = 0;
     }
 
-    // ====================== 懒加载图片处理 ======================
-    /**
-     * 强制加载容器内的懒加载图片
-     * @param {jQuery} $container - 目标容器jQuery对象
-     */
+    function updateDragState() {
+        if (!appState.isLaserActive && !$canvas.hasClass('drawing')) {
+            $mainContainer.css('cursor', 'grab');
+            $dragModeBtn.addClass('active');
+        } else {
+            $mainContainer.css('cursor', 'default');
+            appState.isDragging = false;
+            if (appState.isLaserActive || $canvas.hasClass('drawing')) {
+                $dragModeBtn.removeClass('active');
+            }
+        }
+    }
+
     function forceLoadLazyImages($container) {
         if (!$container || !$container.length) {
             return;
@@ -371,444 +321,402 @@ $(document).ready(function() {
 
         $container.find('img.lazyload').each(function() {
             const $img = $(this);
-            // 优先读取data-original，其次data-src，最后src
             const src = $img.attr('data-original') || $img.attr('data-src') || $img.attr('src');
             if (src) {
-                $img.attr('src', src).removeClass('lazyload');      // 加载图片并移除懒加载类
+                $img.attr('src', src).removeClass('lazyload');
             }
         });
     }
 
-    // ====================== TOC目录 =====================
-    /**
-     * 渲染TOC列表内容
-     */
     function renderTOC() {
-        // 渲染前先解绑TOC相关事件，防止重复绑定
-        $tocList.off('.playback');
-        $playbackTOC.off('.playback');
-        // 清空原有列表内容
-        $tocList.empty();
+        $tocListContainer.off('.playback');
+        $tocContainer.off('.playback');
+        $tocListContainer.empty();
 
-        // 获取放映模式内容中的标题元素
-        const $titles = $playbackContent.find(CONFIG.TITLE_SELECTORS);
+        const $titles = $contentContainer.find(CONFIG.TITLE_SELECTORS);
         if (!$titles.length) {
             return;
         }
 
-        // 遍历标题生成目录项
         $titles.each(function(index) {
             const $title = $(this);
             const titleText = $title.text().trim();
+
             if (!titleText) {
                 return;
             }
 
-            // 给标题添加唯一ID
             const titleId = `playback-toc-title-${index}`;
             $title.attr('id', titleId);
 
-            // 获取标题层级
             const level = parseInt($title.prop('tagName').replace('H', ''));
 
-            // 生成目录项HTML
             const tocItem = `
                 <li class="playback-toc-item playback-toc-level-${level}">
                     <a href="#${titleId}" class="playback-toc-link" data-index="${index}">${titleText}</a>
                 </li>
             `;
-            $tocList.append(tocItem);
+            $tocListContainer.append(tocItem);
         });
 
-        // 绑定目录项点击跳转事件
-        bindTOCClick();
+        bindTOCClickEvents();
     }
 
-    /**
-     * 绑定TOC目录项点击跳转事件
-     */
-    function bindTOCClick() {
-        if (!$playbackTOC.length || !$tocList.length) {
+    function bindTOCClickEvents() {
+        if (!$tocContainer.length || !$tocListContainer.length) {
             return;
         }
 
-        // 直接绑定到目录项
-        $tocList.find('.playback-toc-link').off('click.playback').on('click.playback', function(e) {
+        $tocListContainer.find('.playback-toc-link').off('click.playback').on('click.playback', function(e) {
             e.preventDefault();
             e.stopPropagation();
 
             const index = parseInt($(this).data('index'));
-            const $target = $playbackContent.find(CONFIG.TITLE_SELECTORS).eq(index);
+            const $target = $contentContainer.find(CONFIG.TITLE_SELECTORS).eq(index);
 
             if (!$target.length) {
                 return;
             }
 
-            // 计算目标滚动位置
-            const titleOffsetInContent = $target[0].offsetTop;              // 标题在内容容器中的原始偏移
-            const scaledOffset = titleOffsetInContent * state.zoomScale;    // 适配缩放比例
-            const finalOffset = scaledOffset - 60;                          // 固定偏移
-
-            // 执行滚动到目标位置
-            const scrollContainer = $main[0];
-            scrollContainer.scrollTop = finalOffset;
+            const titleOffsetInContent = $target[0].offsetTop;
+            const scaledOffset = titleOffsetInContent * appState.zoomScale;
+            $mainContainer[0].scrollTop = scaledOffset - 60;
         });
 
-        // 事件委托兜底，防止动态生成的目录项绑定失效
-        $playbackTOC.off('click.playback', '.playback-toc-link').on('click.playback', '.playback-toc-link', function(e) {
+        $tocContainer.off('click.playback', '.playback-toc-link').on('click.playback', '.playback-toc-link', function(e) {
             e.preventDefault();
             e.stopPropagation();
 
             const index = parseInt($(this).data('index'));
-            const $target = $playbackContent.find(CONFIG.TITLE_SELECTORS).eq(index);
+            const $target = $contentContainer.find(CONFIG.TITLE_SELECTORS).eq(index);
+
             if ($target.length) {
-                $main[0].scrollTop = ($target[0].offsetTop * state.zoomScale) - 60;
+                $mainContainer[0].scrollTop = ($target[0].offsetTop * appState.zoomScale) - 60;
             }
         });
     }
 
-    /**
-     * 显示TOC目录
-     */
     function showTOC() {
-        if (!$playbackTOC.length) {
+        if (!$tocContainer.length) {
             return;
         }
 
-        state.isTOCActive = true;
-        $playbackTOC.addClass('active');
-
-        $tocBtn.addClass('active');
-        $tocBtn.attr('data-tooltip', '隐藏目录');
+        appState.isTOCActive = true;
+        $tocContainer.addClass('active');
+        $tocToggleBtn.addClass('active');
+        $tocToggleBtn.attr('data-tooltip', '隐藏目录');
     }
 
-    /**
-     * 隐藏TOC目录
-     */
     function hideTOC() {
-        if (!$playbackTOC.length) {
+        if (!$tocContainer.length) {
             return;
         }
 
-        state.isTOCActive = false;
-        $playbackTOC.removeClass('active');
-
-        $tocBtn.removeClass('active');
-        $tocBtn.attr('data-tooltip', '显示目录');
+        appState.isTOCActive = false;
+        $tocContainer.removeClass('active');
+        $tocToggleBtn.removeClass('active');
+        $tocToggleBtn.attr('data-tooltip', '显示目录');
     }
 
-    /**
-     * 切换TOC显示/隐藏状态
-     */
     function toggleTOC() {
-        state.isTOCActive ? hideTOC() : showTOC();
+        appState.isTOCActive ? hideTOC() : showTOC();
     }
 
-    // ====================== 事件绑定 ======================
-    /**
-     * 绑定事件
-     */
-    function bindEvents() {
-        // 防止重复绑定：已绑定则直接返回
-        if (state.isEventsBound) {
+    function bindAllEvents() {
+        if (appState.isEventsBound) {
             return;
         }
 
-        // TOC关闭按钮点击事件
         $tocCloseBtn.off('click.playback').on('click.playback', function(e) {
             e.preventDefault();
             e.stopPropagation();
             hideTOC();
         });
 
-        // TOC切换按钮点击事件
-        $tocBtn.off('click.playback').on('click.playback', function() {
-            if ($tocList.find('.playback-toc-link').length === 0) {
+        $tocToggleBtn.off('click.playback').on('click.playback', function() {
+            if ($tocListContainer.find('.playback-toc-link').length === 0) {
                 renderTOC();
             }
             toggleTOC();
         });
 
-        // 全屏状态变化监听
         $document.on('fullscreenchange.playback webkitfullscreenchange.playback MSFullscreenChange.playback', function() {
             updateFullscreenBtn(isFullscreenMode());
-            throttledInitCanvas();   // 节流执行画布初始化
+            throttledInitCanvas();
         });
 
-        // 全屏按钮点击事件
         $fullscreenBtn.off('click.playback').on('click.playback', function() {
             isFullscreenMode() ? exitFullscreen() : enterFullscreen();
         });
 
-        // 退出放映模式按钮点击事件
-        $exitBtn.off('click.playback').on('click.playback', function() {
-            // 退出全屏
+        $exitPlaybackBtn.off('click.playback').on('click.playback', function() {
             if (isFullscreenMode()) {
                 exitFullscreen();
             }
 
-            // 清理放映模式状态
-            $main.removeClass('active');
-            $toolbar.hide();
+            $mainContainer.removeClass('active');
+            $toolbarContainer.hide();
             $body.css('overflow', 'auto');
-            disableDrawMode();      // 禁用绘图模式
-            deactivateLaser();      // 关闭激光笔
 
-            // 重置内容容器样式，避免缩放残留
-            $playbackContent.css('transform', 'none');
+            disableDrawMode();
+            deactivateLaser();
 
-            // 清空TOC列表
-            $tocList.empty();
+            $contentContainer.css('transform', 'none');
 
-            // 清空内容容器
-            $playbackContent.html('');
-            $originalContent = null;
-
-            // 隐藏TOC并重置状态
+            $tocListContainer.empty();
             hideTOC();
-            $tocBtn.removeClass('active');
-            $tocBtn.attr('data-tooltip', '显示目录');
+            $tocToggleBtn.removeClass('active');
+            $tocToggleBtn.attr('data-tooltip', '显示目录');
 
-            // 销毁绑定事件
-            destroyEvents();
+            destroyAllEvents();
         });
 
-        // 拖拽模式按钮点击事件
-        $dragBtn.off('click.playback').on('click.playback', disableDrawMode);
+        $dragModeBtn.off('click.playback').on('click.playback', function() {
+            disableDrawMode();
+            deactivateLaser();
+            $dragModeBtn.addClass('active');
+        });
 
-        // 画笔模式按钮点击事件
-        $drawBtn.off('click.playback').on('click.playback', function() {
-            state.isEraserActive = false;
+        $drawModeBtn.off('click.playback').on('click.playback', function() {
+            deactivateLaser();
+            appState.isEraserActive = false;
             $canvas.addClass('drawing');
-
-            $drawBtn.addClass('active');
-            $eraserBtn.removeClass('active');
-            $dragBtn.removeClass('active');
+            $drawModeBtn.addClass('active');
+            $eraserModeBtn.removeClass('active');
+            $dragModeBtn.removeClass('active');
         });
 
-        // 橡皮擦模式按钮点击事件
-        $eraserBtn.off('click.playback').on('click.playback', function() {
-            state.isEraserActive = true;
+        $eraserModeBtn.off('click.playback').on('click.playback', function() {
+            deactivateLaser();
+            appState.isEraserActive = true;
             $canvas.addClass('drawing');
-
-            $eraserBtn.addClass('active');
-            $drawBtn.removeClass('active');
-            $dragBtn.removeClass('active');
+            $eraserModeBtn.addClass('active');
+            $drawModeBtn.removeClass('active');
+            $dragModeBtn.removeClass('active');
         });
 
-        // 激光笔按钮点击事件
-        $laserBtn.off('click.playback').on('click.playback', toggleLaser);
+        $laserModeBtn.off('click.playback').on('click.playback', toggleLaser);
 
-        // 画笔尺寸减小按钮点击事件
         $sizeDownBtn.off('click.playback').on('click.playback', function() {
-            if (state.currentSizeIndex > 0) {
-                state.currentSizeIndex--;
+            if (appState.currentSizeIndex > 0) {
+                appState.currentSizeIndex--;
                 updateBrushSize();
             }
         });
 
-        // 画笔尺寸增大按钮点击事件
         $sizeUpBtn.off('click.playback').on('click.playback', function() {
-            if (state.currentSizeIndex < CONFIG.BRUSH_SIZE_STEPS.length - 1) {
-                state.currentSizeIndex++;
+            if (appState.currentSizeIndex < CONFIG.BRUSH_SIZE_STEPS.length - 1) {
+                appState.currentSizeIndex++;
                 updateBrushSize();
             }
         });
 
-        // 颜色选择器变更事件
         $colorPicker.off('change.playback').on('change.playback', function() {
-            state.brushColor = $(this).val();
-            $sizePrev.css('color', state.brushColor);   // 同步预览块颜色
-            syncLaserColor();       // 同步激光笔颜色
+            appState.brushColor = $(this).val();
+            $sizePreview.css('color', appState.brushColor);
+            syncLaserColor();
         });
 
-        // 清空画布按钮点击事件
-        $clearBtn.off('click.playback').on('click.playback', clearCanvas);
+        $clearCanvasBtn.off('click.playback').on('click.playback', clearCanvas);
 
-        // 鼠标按下/触摸开始绘图
         $canvas.off('mousedown.playback touchstart.playback').on('mousedown.playback touchstart.playback', function(e) {
-            // 阻止触摸默认行为
             preventTouchDefault(e);
 
-            if (!$canvas.hasClass('drawing') || !ctx) {
+            if (!$canvas.hasClass('drawing') || !canvasContext) {
                 return;
             }
 
-            state.isDrawing = true;
-            const pos = getEventPos(e);
+            appState.isDrawing = true;
+            const pos = getEventPosition(e);
 
-            // 开始绘制路径
-            ctx.beginPath();
-            ctx.moveTo(pos.x, pos.y);
+            canvasContext.beginPath();
+            canvasContext.moveTo(pos.x, pos.y);
 
-            // 设置绘图样式
-            if (state.isEraserActive) {
-                ctx.globalCompositeOperation = 'destination-out';   // 橡皮擦模式
-                ctx.strokeStyle = 'rgba(0,0,0,1)';
-                ctx.lineWidth = state.brushSize * 2;                // 橡皮擦尺寸加倍
+            if (appState.isEraserActive) {
+                canvasContext.globalCompositeOperation = 'destination-out';
+                canvasContext.strokeStyle = 'rgba(0,0,0,1)';
+                canvasContext.lineWidth = appState.brushSize * 2;
             } else {
-                ctx.globalCompositeOperation = 'source-over';       // 正常绘图模式
-                ctx.strokeStyle = state.brushColor;
-                ctx.lineWidth = state.brushSize;
+                canvasContext.globalCompositeOperation = 'source-over';
+                canvasContext.strokeStyle = appState.brushColor;
+                canvasContext.lineWidth = appState.brushSize;
             }
 
-            // 鼠标移动/触摸滑动绘图
             $document.off('mousemove.playback touchmove.playback').on('mousemove.playback touchmove.playback', function(e) {
                 preventTouchDefault(e);
-                if (!state.isDrawing || !ctx) {
+                if (!appState.isDrawing || !canvasContext) {
                     return;
                 }
 
-                const pos = getEventPos(e);
-                ctx.lineTo(pos.x, pos.y);
-                ctx.stroke();       // 绘制线条
+                const pos = getEventPosition(e);
+                canvasContext.lineTo(pos.x, pos.y);
+                canvasContext.stroke();
             });
         });
 
-        // 鼠标松开/触摸结束/离开停止绘图
         $document.off('mouseup.playback touchend.playback mouseleave.playback touchcancel.playback').on('mouseup.playback touchend.playback mouseleave.playback touchcancel.playback', function(e) {
             preventTouchDefault(e);
-            if (state.isDrawing && ctx) {
-                state.isDrawing = false;
-                ctx.globalCompositeOperation = 'source-over';   // 恢复默认合成模式
-                // 解绑移动事件
+            if (appState.isDrawing && canvasContext) {
+                appState.isDrawing = false;
+                canvasContext.globalCompositeOperation = 'source-over';
                 $document.off('mousemove.playback touchmove.playback');
             }
         });
 
-        // 放大按钮点击事件
         $zoomInBtn.off('click.playback').on('click.playback', function() {
-            if (state.zoomScale < CONFIG.ZOOM.max) {
-                state.zoomScale = Math.round((state.zoomScale + CONFIG.ZOOM.step) * 10) / 10;
+            if (appState.zoomScale < CONFIG.ZOOM.max) {
+                appState.zoomScale = Math.round((appState.zoomScale + CONFIG.ZOOM.step) * 10) / 10;
                 updateZoom();
             }
         });
 
-        // 缩小按钮点击事件
         $zoomOutBtn.off('click.playback').on('click.playback', function() {
-            if (state.zoomScale > CONFIG.ZOOM.min) {
-                state.zoomScale = Math.round((state.zoomScale - CONFIG.ZOOM.step) * 10) / 10;
+            if (appState.zoomScale > CONFIG.ZOOM.min) {
+                appState.zoomScale = Math.round((appState.zoomScale - CONFIG.ZOOM.step) * 10) / 10;
                 updateZoom();
             }
         });
 
-        // 重置缩放按钮点击事件
         $zoomResetBtn.off('click.playback').on('click.playback', resetZoom);
 
-        // 窗口大小调整事件
         $window.off('resize.playback').on('resize.playback', function() {
-            if ($main.hasClass('active')) {
+            if ($mainContainer.hasClass('active')) {
                 throttledInitCanvas();
             }
         });
 
-        // ESC键退出
         $document.off('keydown.playback').on('keydown.playback', function(e) {
             if (e.key === 'Escape') {
-                if (state.isTOCActive) {
-                    hideTOC();          // 关闭TOC
+                if (appState.isTOCActive) {
+                    hideTOC();
                 } else if (isFullscreenMode()) {
-                    exitFullscreen();   // 退出全屏
-                } else if (state.isLaserActive) {
-                    deactivateLaser();  // 关闭激光笔
-                } else if ($main.hasClass('active')) {
-                    $exitBtn.click();   // 退出放映模式
+                    exitFullscreen();
+                } else if (appState.isLaserActive) {
+                    deactivateLaser();
+                } else if ($mainContainer.hasClass('active')) {
+                    $exitPlaybackBtn.click();
                 }
             }
         });
 
-        // 绑定完成后标记为已绑定
-        state.isEventsBound = true;
+        $mainContainer.off('mousedown.playback-drag').on('mousedown.playback-drag', function(e) {
+            if ($canvas.hasClass('drawing') || appState.isLaserActive) {
+                return;
+            }
+
+            appState.isDragging = true;
+            appState.dragStartX = e.clientX;
+            appState.dragStartY = e.clientY;
+            appState.dragStartOffsetX = appState.contentOffsetX;
+            appState.dragStartOffsetY = appState.contentOffsetY;
+            $mainContainer.css('cursor', 'grabbing');
+            e.preventDefault();
+        });
+
+        $document.off('mousemove.playback-drag').on('mousemove.playback-drag', function(e) {
+            if (!appState.isDragging || appState.isLaserActive) {
+                return;
+            }
+
+            const deltaX = (e.clientX - appState.dragStartX) / appState.zoomScale;
+            const deltaY = (e.clientY - appState.dragStartY) / appState.zoomScale;
+
+            appState.contentOffsetX = appState.dragStartOffsetX + deltaX;
+            appState.contentOffsetY = appState.dragStartOffsetY + deltaY;
+
+            applyTransform();
+        });
+
+        $document.off('mouseup.playback-drag').on('mouseup.playback-drag', function() {
+            if (!appState.isDragging || appState.isLaserActive) {
+                return;
+            }
+
+            appState.isDragging = false;
+            if (!appState.isLaserActive && !$canvas.hasClass('drawing')) {
+                $mainContainer.css('cursor', 'grab');
+            } else {
+                $mainContainer.css('cursor', 'default');
+            }
+        });
+
+        appState.isEventsBound = true;
     }
 
-    /**
-     * 销毁所有绑定的事件
-     */
-    function destroyEvents() {
-        // 解绑所有事件
+    function destroyAllEvents() {
         $tocCloseBtn.off('.playback');
-        $tocBtn.off('.playback');
+        $tocToggleBtn.off('.playback');
         $document.off('.playback');
         $fullscreenBtn.off('.playback');
-        $exitBtn.off('.playback');
-        $dragBtn.off('.playback');
-        $drawBtn.off('.playback');
-        $eraserBtn.off('.playback');
+        $exitPlaybackBtn.off('.playback');
+        $dragModeBtn.off('.playback');
+        $drawModeBtn.off('.playback');
+        $eraserModeBtn.off('.playback');
         $sizeDownBtn.off('.playback');
         $sizeUpBtn.off('.playback');
         $colorPicker.off('.playback');
-        $clearBtn.off('.playback');
+        $clearCanvasBtn.off('.playback');
         $canvas.off('.playback');
         $window.off('.playback');
-        $playbackTOC.off('.playback');
-        $tocList.off('.playback');
-        $laserBtn.off('.playback');
+        $tocContainer.off('.playback');
+        $tocListContainer.off('.playback');
+        $laserModeBtn.off('.playback');
+        $mainContainer.off('.playback-drag');
+        $document.off('.playback-drag');
 
-        // 清理画布上下文
-        if (ctx) {
-            ctx.clearRect(0, 0, $window.width(), $window.height());
-            ctx = null;
+        if (canvasContext) {
+            clearCanvas();
+            canvasContext = null;
         }
 
-        // 清理定时器
         clearTimeout(window.playbackFullscreenTimer);
 
-        // 重置状态
-        state.isDrawing = false;
-        state.isEraserActive = false;
-        state.zoomScale = 1.0;
-        state.isTOCActive = false;
-        state.currentSizeIndex = CONFIG.DEFAULT_BRUSH_SIZE_INDEX;
-        state.brushColor = CONFIG.DEFAULT_BRUSH_COLOR;
-        state.isLaserActive = false;
-        state.isEventsBound = false;
+        appState.isDrawing = false;
+        appState.isEraserActive = false;
+        appState.zoomScale = 1.0;
+        appState.isTOCActive = false;
+        appState.currentSizeIndex = CONFIG.DEFAULT_BRUSH_SIZE_INDEX;
+        appState.brushColor = CONFIG.DEFAULT_BRUSH_COLOR;
+        appState.isLaserActive = false;
+        appState.isEventsBound = false;
+        appState.isDragging = false;
+        appState.contentOffsetX = 0;
+        appState.contentOffsetY = 0;
     }
 
-    // 进入放映模式按钮点击事件
-    $enterPlayback.off('click.playback-global').on('click.playback-global', function() {
-        // 无原始内容则不进入放映模式
+    $enterPlaybackBtn.off('click.playback-global').on('click.playback-global', function() {
         $originalContent = $('.post-content');
         if (!$originalContent.length) {
             return;
         }
 
-        // 清空容器后再赋值，减少DOM重排重绘
-        $playbackContent.empty();
-        // 复制原始内容到放映模式容器
-        $playbackContent.html($originalContent.prop('outerHTML'));
-        // 移除aisummary
-        $playbackContent.find('.aisummary').remove();
+        $contentContainer.empty();
+        $contentContainer.html($originalContent.prop('outerHTML'));
+        $contentContainer.find('.aisummary').remove();
 
-        // 强制加载懒加载图片
-        forceLoadLazyImages($playbackContent);
+        forceLoadLazyImages($contentContainer);
 
-        // 渲染TOC列表内容
         renderTOC();
 
-        // 显示放映模式容器和工具栏
-        $main.addClass('active');
-        $toolbar.show();
+        $mainContainer.addClass('active');
+        $toolbarContainer.show();
         $body.css('overflow', 'hidden');
 
-        // 初始化画布和工具状态
-        initCanvas();           // 初始化绘图画布
-        disableDrawMode();      // 禁用绘图模式
-        resetZoom();            // 重置缩放为100%
-        updateBrushSize();      // 初始化画笔尺寸
-        updateZoom();           // 初始化缩放
+        initCanvas();
+        disableDrawMode();
+        resetZoom();
+        updateBrushSize();
+        updateZoom();
 
-        // 清空原有定时器，防止多次触发全屏
         clearTimeout(window.playbackFullscreenTimer);
-        // 自动进入全屏
         window.playbackFullscreenTimer = setTimeout(enterFullscreen, 50);
 
-        // 滚动到顶部
-        const scrollContainer = $main[0];
-        scrollContainer.scrollTop = 0;
+        $mainContainer[0].scrollTop = 0;
 
-        // 重置事件绑定标记，确保可以重新绑定
-        state.isEventsBound = false;
-        // 绑定所有事件
-        bindEvents();
+        appState.isEventsBound = false;
+        bindAllEvents();
+
+        $mainContainer.css('cursor', 'grab');
+        $dragModeBtn.addClass('active');
     });
 });
