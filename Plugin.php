@@ -4,7 +4,7 @@
  *
  * @package playback
  * @author 多仔
- * @version 1.0
+ * @version 1.1
  * @link https://www.duox.dev
  */
 if (!defined('__TYPECHO_ROOT_DIR__')) exit;
