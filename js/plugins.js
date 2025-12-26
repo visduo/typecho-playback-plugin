@@ -462,6 +462,7 @@ $(document).ready(function() {
             deactivateLaser();
 
             $contentContainer.css('transform', 'none');
+            $contentContainer.empty();
 
             $tocListContainer.empty();
             hideTOC();
